@@ -1,8 +1,5 @@
+name: Release Summary
 
-# ==============================================================
-# 3️⃣ release-summary.yml — Append Release Info to Central Repo
-# ==============================================================
-name: Update Central Release Log
 on:
   workflow_call:
     inputs:
@@ -13,31 +10,32 @@ on:
         required: true
         type: string
       changelog:
-        required: false
+        required: true
         type: string
 
 jobs:
-  update-log:
+  append_to_central_log:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout central repo
+      - name: Checkout central release repo
         uses: actions/checkout@v4
         with:
-          repository: NextPhase-Innovations/nextphase-releases
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: NextPhase-Innovations/releases
+          token: ${{ secrets.CENTRAL_REPO_PAT }}   # Personal access token
+          ref: main
 
-      - name: Append new release info
+      - name: Append release entry
         run: |
-          echo "### 🔹 ${{ inputs.project_name }} v${{ inputs.version }} — $(date '+%Y-%m-%d')" >> releases.md
-          if [ ! -z "${{ inputs.changelog }}" ]; then
-            echo "${{ inputs.changelog }}" >> releases.md
-          fi
-          echo "" >> releases.md
+          echo "### ${{ inputs.project_name }} v${{ inputs.version }} – $(date +'%Y-%m-%d')" >> CHANGELOG.md
+          echo "${{ inputs.changelog }}" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "---" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
 
-      - name: Commit & push
+      - name: Commit and push
         run: |
-          git config user.name "NextPhase Bot"
-          git config user.email "melissa@nextphaseinnovations.ai"
-          git add releases.md
-          git commit -m "Update release log for ${{ inputs.project_name }} v${{ inputs.version }}"
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update changelog for ${{ inputs.project_name }} v${{ inputs.version }}"
+          git push origin main

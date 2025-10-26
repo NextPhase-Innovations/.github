@@ -1,9 +1,28 @@
 name: Slack Notification
-uses: slackapi/slack-github-action@v1.27.0
-    with:
-        payload: |
-        {
-          "text": "🚀 *${{ inputs.project_name }}* v${{ inputs.version }} released!\n${{ inputs.changelog }}"
-      }
-  env:
-    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      changelog:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "🚀 *${{ inputs.project_name }}* v${{ inputs.version }} released!\n${{ inputs.changelog }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
