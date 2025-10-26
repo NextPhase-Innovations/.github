@@ -1,0 +1,16 @@
+# ==============================================================
+# 1️⃣ release-please.yml — Auto Versioning & Changelog Generation
+# ==============================================================
+name: Release Please
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/release-please-action@v3
+        with:
+          release-type: node
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

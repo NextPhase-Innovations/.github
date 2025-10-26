@@ -1,0 +1,128 @@
+# 🧱 NextPhase Innovation Shared Workflows Pack
+# These YAML files can live in NextPhase-Innovation/.github/.github/workflows/
+# and be reused in all org or personal repos via 'uses:'
+
+# ==============================================================
+# 1️⃣ release-please.yml — Auto Versioning & Changelog Generation
+# ==============================================================
+name: Release Please
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/release-please-action@v3
+        with:
+          release-type: node
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+# ==============================================================
+# 2️⃣ notify-release.yml — Slack / Notion / Email Notifications
+# ==============================================================
+name: Notify Release
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text": "🚀 New release *${{ inputs.project_name }}* version *${{ inputs.version }}* is live!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+# ==============================================================
+# 3️⃣ release-summary.yml — Append Release Info to Central Repo
+# ==============================================================
+name: Update Central Release Log
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      changelog:
+        required: false
+        type: string
+
+jobs:
+  update-log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout central repo
+        uses: actions/checkout@v4
+        with:
+          repository: NextPhase-Innovation/nextphase-releases
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Append new release info
+        run: |
+          echo "### 🔹 ${{ inputs.project_name }} v${{ inputs.version }} — $(date '+%Y-%m-%d')" >> releases.md
+          if [ ! -z "${{ inputs.changelog }}" ]; then
+            echo "${{ inputs.changelog }}" >> releases.md
+          fi
+          echo "" >> releases.md
+
+      - name: Commit & push
+        run: |
+          git config user.name "NextPhase Bot"
+          git config user.email "bot@nextphaseinnovations.ai"
+          git add releases.md
+          git commit -m "Update release log for ${{ inputs.project_name }} v${{ inputs.version }}"
+          git push
+
+# ==============================================================
+# 4️⃣ lint-test.yml — Basic CI Workflow
+# ==============================================================
+name: Lint and Test
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+
+# ==============================================================
+# 5️⃣ close-stale.yml — Auto Close Inactive Issues
+# ==============================================================
+name: Close Stale Issues
+on:
+  schedule:
+    - cron: "0 0 * * *"  # daily
+  workflow_call:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 30
+          days-before-close: 7
+          stale-issue-message: "This issue has been inactive for 30 days and will close soon. Comment to keep it open."
+          close-issue-message: "Closed due to inactivity. Feel free to reopen if needed."
