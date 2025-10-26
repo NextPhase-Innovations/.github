@@ -1,0 +1,26 @@
+
+# ==============================================================
+# 2️⃣ notify-release.yml — Slack / Notion / Email Notifications
+# ==============================================================
+name: Notify Release
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text": "🚀 New release *${{ inputs.project_name }}* version *${{ inputs.version }}* is live!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
